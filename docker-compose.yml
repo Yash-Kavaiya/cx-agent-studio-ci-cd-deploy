@@ -1,0 +1,15 @@
+services:
+  cx-agent-cicd:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
+      - GCP_REGION=${GCP_REGION:-us-central1}
+      - CES_APP_ID=${CES_APP_ID}
+      - DEPLOY_ENV=${DEPLOY_ENV:-dev}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
+    volumes:
+      - ./agents:/app/agents
+      - ./configs:/app/configs
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-./credentials}:/app/credentials/service-account.json:ro

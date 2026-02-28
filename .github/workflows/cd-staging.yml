@@ -1,0 +1,108 @@
+name: CD - Deploy to Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      agent_app_id:
+        description: "CX Agent Studio App ID to deploy"
+        required: false
+        type: string
+
+env:
+  PYTHON_VERSION: "3.11"
+  DEPLOY_ENV: staging
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID_STAGING }}
+
+      - name: Enable CES API
+        run: |
+          gcloud services enable ces.googleapis.com --project=${{ secrets.GCP_PROJECT_ID_STAGING }} || true
+
+      - name: Export agent from source environment
+        run: |
+          python -m src.cli export-agent \
+            --project-id=${{ secrets.GCP_PROJECT_ID_DEV }} \
+            --app-id=${{ inputs.agent_app_id || secrets.CES_APP_ID }} \
+            --output-dir=agents/exported
+
+      - name: Transform agent config for staging
+        run: |
+          python -m src.cli transform-config \
+            --agent-dir=agents/exported \
+            --env-config=configs/environments/staging.yaml
+
+      - name: Validate agent before deployment
+        run: |
+          python -m src.cli validate-agent \
+            --agent-dir=agents/exported
+
+      - name: Import agent to staging
+        run: |
+          python -m src.cli import-agent \
+            --project-id=${{ secrets.GCP_PROJECT_ID_STAGING }} \
+            --app-id=${{ inputs.agent_app_id || secrets.CES_APP_ID_STAGING }} \
+            --agent-dir=agents/exported
+
+      - name: Run smoke tests
+        run: |
+          python -m src.cli smoke-test \
+            --project-id=${{ secrets.GCP_PROJECT_ID_STAGING }} \
+            --app-id=${{ secrets.CES_APP_ID_STAGING }} \
+            --env-config=configs/environments/staging.yaml
+
+      - name: Archive deployment artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-deployment-${{ github.sha }}
+          path: agents/exported/
+          retention-days: 30
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+              -H 'Content-Type: application/json' \
+              -d "{\"text\":\"CX Agent Studio Staging Deploy: ${STATUS} | Commit: ${{ github.sha }} | Actor: ${{ github.actor }}\"}"
+          fi
+          echo "Deployment status: ${STATUS}"

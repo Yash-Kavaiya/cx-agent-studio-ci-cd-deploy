@@ -1,0 +1,120 @@
+# Google Cloud Build configuration for CX Agent Studio CI/CD.
+# Alternative to GitHub Actions for teams using Cloud Build.
+#
+# Trigger this build with:
+#   gcloud builds submit --config=cloudbuild.yaml \
+#     --substitutions=_DEPLOY_ENV=staging,_APP_ID=your-app-id
+
+substitutions:
+  _DEPLOY_ENV: "staging"
+  _APP_ID: ""
+  _SOURCE_PROJECT: ""
+  _TARGET_PROJECT: "${PROJECT_ID}"
+  _REGION: "us-central1"
+  _PYTHON_VERSION: "3.11"
+
+steps:
+  # Step 1: Install dependencies
+  - name: "python:${_PYTHON_VERSION}-slim"
+    id: "install-deps"
+    entrypoint: pip
+    args: ["install", "-r", "requirements.txt", "--user"]
+
+  # Step 2: Run linter
+  - name: "python:${_PYTHON_VERSION}-slim"
+    id: "lint"
+    entrypoint: bash
+    args:
+      - "-c"
+      - |
+        pip install ruff --quiet
+        ruff check src/ tests/
+    waitFor: ["-"]
+
+  # Step 3: Run tests
+  - name: "python:${_PYTHON_VERSION}-slim"
+    id: "test"
+    entrypoint: bash
+    args:
+      - "-c"
+      - |
+        pip install -r requirements-dev.txt --quiet
+        pytest tests/ -v --tb=short
+    waitFor: ["install-deps"]
+
+  # Step 4: Validate configs
+  - name: "python:${_PYTHON_VERSION}-slim"
+    id: "validate-configs"
+    entrypoint: python
+    args: ["-m", "src.cli", "validate-configs"]
+    waitFor: ["install-deps"]
+
+  # Step 5: Export agent from source
+  - name: "python:${_PYTHON_VERSION}-slim"
+    id: "export-agent"
+    entrypoint: python
+    args:
+      - "-m"
+      - "src.cli"
+      - "export-agent"
+      - "--project-id=${_SOURCE_PROJECT}"
+      - "--app-id=${_APP_ID}"
+      - "--output-dir=agents/exported"
+      - "--region=${_REGION}"
+    waitFor: ["test", "validate-configs"]
+
+  # Step 6: Transform config
+  - name: "python:${_PYTHON_VERSION}-slim"
+    id: "transform-config"
+    entrypoint: python
+    args:
+      - "-m"
+      - "src.cli"
+      - "transform-config"
+      - "--agent-dir=agents/exported"
+      - "--env-config=configs/environments/${_DEPLOY_ENV}.yaml"
+    waitFor: ["export-agent"]
+
+  # Step 7: Validate agent
+  - name: "python:${_PYTHON_VERSION}-slim"
+    id: "validate-agent"
+    entrypoint: python
+    args:
+      - "-m"
+      - "src.cli"
+      - "validate-agent"
+      - "--agent-dir=agents/exported"
+      - "--strict"
+    waitFor: ["transform-config"]
+
+  # Step 8: Import agent to target
+  - name: "python:${_PYTHON_VERSION}-slim"
+    id: "import-agent"
+    entrypoint: python
+    args:
+      - "-m"
+      - "src.cli"
+      - "import-agent"
+      - "--project-id=${_TARGET_PROJECT}"
+      - "--app-id=${_APP_ID}"
+      - "--agent-dir=agents/exported"
+      - "--region=${_REGION}"
+    waitFor: ["validate-agent"]
+
+  # Step 9: Smoke test
+  - name: "python:${_PYTHON_VERSION}-slim"
+    id: "smoke-test"
+    entrypoint: python
+    args:
+      - "-m"
+      - "src.cli"
+      - "smoke-test"
+      - "--project-id=${_TARGET_PROJECT}"
+      - "--app-id=${_APP_ID}"
+      - "--region=${_REGION}"
+    waitFor: ["import-agent"]
+
+timeout: "1200s"
+
+options:
+  logging: CLOUD_LOGGING_ONLY

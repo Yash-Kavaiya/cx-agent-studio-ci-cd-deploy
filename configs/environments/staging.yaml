@@ -1,0 +1,29 @@
+gcp:
+  project_id: "your-staging-project-id"
+  region: "us-central1"
+  multi_region: "us"
+
+ces:
+  app_id: "your-staging-app-id"
+  agent_id: ""
+  api_endpoint: "ces.googleapis.com"
+  oauth_scope: "https://www.googleapis.com/auth/ces"
+
+storage:
+  bucket_name: "your-staging-project-id-agent-exports"
+  export_prefix: "agent-exports/staging"
+  backup_prefix: "agent-backups/staging"
+
+deployment:
+  environment: "staging"
+  auto_rollback: true
+  smoke_test_timeout: 120
+  max_retries: 3
+
+overrides:
+  data_store_uris: {}
+  service_endpoints: {}
+  storage_buckets: {}
+  custom_settings:
+    log_level: "INFO"
+    enable_debug_mode: false

@@ -1,0 +1,115 @@
+name: Agent Evaluation
+
+on:
+  schedule:
+    - cron: "0 6 * * 1-5"  # Mon-Fri at 6AM UTC
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to evaluate"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      test_suite:
+        description: "Test suite to run"
+        required: false
+        type: string
+        default: "default"
+
+env:
+  PYTHON_VERSION: "3.11"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  evaluate:
+    name: Evaluate Agent Quality
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'staging' }}
+    strategy:
+      matrix:
+        test_type: [accuracy, latency, safety]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Run ${{ matrix.test_type }} evaluation
+        run: |
+          python -m src.cli evaluate-agent \
+            --project-id=${{ secrets.GCP_PROJECT_ID }} \
+            --app-id=${{ secrets.CES_APP_ID }} \
+            --test-type=${{ matrix.test_type }} \
+            --test-suite=${{ inputs.test_suite || 'default' }} \
+            --output=results-${{ matrix.test_type }}.json
+
+      - name: Upload evaluation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-${{ matrix.test_type }}
+          path: results-${{ matrix.test_type }}.json
+
+  report:
+    name: Generate Evaluation Report
+    runs-on: ubuntu-latest
+    needs: evaluate
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all evaluation results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: eval-*
+          merge-multiple: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate consolidated report
+        run: |
+          python -m src.cli generate-eval-report \
+            --results-dir=. \
+            --output=evaluation-report.md
+
+      - name: Upload consolidated report
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-report
+          path: evaluation-report.md
+
+      - name: Notify evaluation results
+        if: always()
+        run: |
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+              -H 'Content-Type: application/json' \
+              -d "{\"text\":\"CX Agent Evaluation Complete | Environment: ${{ inputs.environment || 'staging' }} | Status: ${{ needs.evaluate.result }}\"}"
+          fi

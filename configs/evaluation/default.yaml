@@ -1,0 +1,26 @@
+# Default evaluation test suite for CX Agent Studio agents.
+# Tests are run against the agent via the CES SessionService API.
+
+test_cases:
+  - name: "greeting_response"
+    user_input: "Hello"
+    expected_keywords:
+      - "hello"
+    expected_not_contain: []
+    max_latency_ms: 5000
+
+  - name: "help_request"
+    user_input: "What can you help me with?"
+    expected_keywords:
+      - "help"
+    expected_not_contain: []
+    max_latency_ms: 5000
+
+  - name: "fallback_handling"
+    user_input: "asdkjfhaskjdfh random gibberish"
+    expected_keywords: []
+    expected_not_contain:
+      - "error"
+      - "exception"
+      - "traceback"
+    max_latency_ms: 5000
