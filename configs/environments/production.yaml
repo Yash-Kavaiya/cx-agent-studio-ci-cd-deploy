@@ -1,0 +1,29 @@
+gcp:
+  project_id: "your-production-project-id"
+  region: "us-central1"
+  multi_region: "us"
+
+ces:
+  app_id: "your-production-app-id"
+  agent_id: ""
+  api_endpoint: "ces.googleapis.com"
+  oauth_scope: "https://www.googleapis.com/auth/ces"
+
+storage:
+  bucket_name: "your-production-project-id-agent-exports"
+  export_prefix: "agent-exports/production"
+  backup_prefix: "agent-backups/production"
+
+deployment:
+  environment: "production"
+  auto_rollback: true
+  smoke_test_timeout: 180
+  max_retries: 5
+
+overrides:
+  data_store_uris: {}
+  service_endpoints: {}
+  storage_buckets: {}
+  custom_settings:
+    log_level: "WARNING"
+    enable_debug_mode: false
