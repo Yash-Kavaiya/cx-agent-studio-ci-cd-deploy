@@ -11,7 +11,7 @@ import json
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import yaml
@@ -128,7 +128,7 @@ def run_session(
     with httpx.Client(timeout=30) as client:
         response = client.post(url, headers=headers, json=payload)
         response.raise_for_status()
-        return response.json()
+        return cast(dict[str, Any], response.json())
 
 
 def evaluate_accuracy(
@@ -336,7 +336,7 @@ def _extract_response_text(response: dict[str, Any]) -> str:
     if "output" in response:
         output = response["output"]
         if isinstance(output, dict) and "text" in output:
-            return output["text"]
+            return cast(str, output["text"])
         if isinstance(output, str):
             return output
 
@@ -345,7 +345,7 @@ def _extract_response_text(response: dict[str, Any]) -> str:
         if messages and isinstance(messages, list):
             last_msg = messages[-1]
             if isinstance(last_msg, dict):
-                return last_msg.get("text", "")
+                return cast(str, last_msg.get("text", ""))
 
     return json.dumps(response)
 

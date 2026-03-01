@@ -11,7 +11,7 @@ import json
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from rich.console import Console
@@ -137,7 +137,7 @@ def import_agent(
         )
 
         response = _api_request("POST", url, json_body={"agentContent": agent_content})
-        result = response.json()
+        result: dict[str, Any] = response.json()
 
         console.print(f"[bold green]Agent imported successfully[/] to {app_id}")
         return result
@@ -268,8 +268,8 @@ def list_agent_versions(
         f"locations/{region}/agentApps/{app_id}/versions",
     )
     response = _api_request("GET", url)
-    result = response.json()
-    return result.get("versions", [])
+    result: dict[str, Any] = response.json()
+    return cast(list[dict[str, Any]], result.get("versions", []))
 
 
 def restore_agent_version(
@@ -284,6 +284,6 @@ def restore_agent_version(
         f"locations/{region}/agentApps/{app_id}:restoreVersion",
     )
     response = _api_request("POST", url, json_body={"versionId": version_id})
-    result = response.json()
+    result: dict[str, Any] = response.json()
     console.print(f"[bold green]Restored version[/] {version_id}")
     return result

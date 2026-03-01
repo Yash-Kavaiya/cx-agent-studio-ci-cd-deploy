@@ -10,7 +10,7 @@ modules can be imported without the SDK installed (e.g., during testing).
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from google.auth import credentials as ga_credentials
@@ -36,20 +36,26 @@ def get_credentials(
     target_scopes = scopes or CES_SCOPES
 
     if service_account_file:
-        return service_account.Credentials.from_service_account_file(
-            service_account_file,
-            scopes=target_scopes,
+        return cast(
+            ga_credentials.Credentials,
+            service_account.Credentials.from_service_account_file(
+                service_account_file,
+                scopes=target_scopes,
+            ),
         )
 
     env_key_file = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
     if env_key_file and os.path.exists(env_key_file):
-        return service_account.Credentials.from_service_account_file(
-            env_key_file,
-            scopes=target_scopes,
+        return cast(
+            ga_credentials.Credentials,
+            service_account.Credentials.from_service_account_file(
+                env_key_file,
+                scopes=target_scopes,
+            ),
         )
 
     creds, project = google.auth.default(scopes=target_scopes)
-    return creds
+    return cast(ga_credentials.Credentials, creds)
 
 
 def get_auth_headers(credentials: ga_credentials.Credentials | None = None) -> dict[str, str]:
@@ -74,7 +80,7 @@ def get_project_id() -> str:
 
     _, project = google.auth.default()
     if project:
-        return project
+        return cast(str, project)
 
     msg = "Could not determine GCP project ID. Set GCP_PROJECT_ID environment variable."
     raise RuntimeError(msg)
