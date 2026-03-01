@@ -247,14 +247,16 @@ def generate_eval_report(results_dir: str, output: str) -> None:
             for r in data.get("results", [])
         ]
 
-        reports.append(EvalReport(
-            total_tests=data["total_tests"],
-            passed_tests=data["passed_tests"],
-            failed_tests=data["failed_tests"],
-            avg_latency_ms=data["avg_latency_ms"],
-            results=eval_results,
-            test_type=data.get("test_type", "unknown"),
-        ))
+        reports.append(
+            EvalReport(
+                total_tests=data["total_tests"],
+                passed_tests=data["passed_tests"],
+                failed_tests=data["failed_tests"],
+                avg_latency_ms=data["avg_latency_ms"],
+                results=eval_results,
+                test_type=data.get("test_type", "unknown"),
+            )
+        )
 
     if reports:
         markdown = generate_report_markdown(reports)

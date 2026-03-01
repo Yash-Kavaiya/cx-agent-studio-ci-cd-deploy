@@ -27,9 +27,7 @@ class CESConfig(BaseModel):
 
     app_id: str = Field(..., description="CES Agent Application ID")
     agent_id: str = Field(default="", description="CES Agent ID")
-    api_endpoint: str = Field(
-        default="ces.googleapis.com", description="CES API endpoint"
-    )
+    api_endpoint: str = Field(default="ces.googleapis.com", description="CES API endpoint")
     oauth_scope: str = Field(
         default="https://www.googleapis.com/auth/ces",
         description="OAuth scope for CES API",

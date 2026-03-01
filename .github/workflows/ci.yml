@@ -122,7 +122,7 @@ jobs:
 
       - name: Check for secrets in code
         run: |
-          if grep -rn "PRIVATE KEY" --include="*.py" --include="*.yaml" --include="*.yml" --include="*.json" .; then
+          if grep -rn "PRIVATE KEY" --include="*.py" --include="*.yaml" --include="*.yml" --include="*.json" --exclude-dir=".github" .; then
             echo "::error::Potential secrets found in code!"
             exit 1
           fi

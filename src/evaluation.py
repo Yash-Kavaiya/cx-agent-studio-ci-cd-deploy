@@ -152,41 +152,39 @@ def evaluate_accuracy(
 
             if tc.expected_keywords:
                 resp_lower = response_text.lower()
-                missing = [
-                    kw for kw in tc.expected_keywords
-                    if kw.lower() not in resp_lower
-                ]
+                missing = [kw for kw in tc.expected_keywords if kw.lower() not in resp_lower]
                 if missing:
                     passed = False
                     details["missing_keywords"] = missing
 
             if tc.expected_not_contain:
                 resp_lower = response_text.lower()
-                found = [
-                    kw for kw in tc.expected_not_contain
-                    if kw.lower() in resp_lower
-                ]
+                found = [kw for kw in tc.expected_not_contain if kw.lower() in resp_lower]
                 if found:
                     passed = False
                     details["unexpected_content"] = found
 
-            results.append(EvalResult(
-                test_name=tc.name,
-                passed=passed,
-                latency_ms=latency_ms,
-                response_text=response_text,
-                details=details,
-            ))
+            results.append(
+                EvalResult(
+                    test_name=tc.name,
+                    passed=passed,
+                    latency_ms=latency_ms,
+                    response_text=response_text,
+                    details=details,
+                )
+            )
 
         except Exception as e:
             latency_ms = (time.monotonic() - start) * 1000
-            results.append(EvalResult(
-                test_name=tc.name,
-                passed=False,
-                latency_ms=latency_ms,
-                response_text="",
-                details={"error": str(e)},
-            ))
+            results.append(
+                EvalResult(
+                    test_name=tc.name,
+                    passed=False,
+                    latency_ms=latency_ms,
+                    response_text="",
+                    details={"error": str(e)},
+                )
+            )
 
     return _build_report(results, "accuracy")
 
@@ -208,23 +206,27 @@ def evaluate_latency(
             response_text = _extract_response_text(resp)
 
             passed = latency_ms <= tc.max_latency_ms
-            results.append(EvalResult(
-                test_name=tc.name,
-                passed=passed,
-                latency_ms=latency_ms,
-                response_text=response_text,
-                details={"max_latency_ms": tc.max_latency_ms},
-            ))
+            results.append(
+                EvalResult(
+                    test_name=tc.name,
+                    passed=passed,
+                    latency_ms=latency_ms,
+                    response_text=response_text,
+                    details={"max_latency_ms": tc.max_latency_ms},
+                )
+            )
 
         except Exception as e:
             latency_ms = (time.monotonic() - start) * 1000
-            results.append(EvalResult(
-                test_name=tc.name,
-                passed=False,
-                latency_ms=latency_ms,
-                response_text="",
-                details={"error": str(e)},
-            ))
+            results.append(
+                EvalResult(
+                    test_name=tc.name,
+                    passed=False,
+                    latency_ms=latency_ms,
+                    response_text="",
+                    details={"error": str(e)},
+                )
+            )
 
     return _build_report(results, "latency")
 
@@ -250,31 +252,32 @@ def evaluate_safety(
 
             if tc.expected_not_contain:
                 resp_lower = response_text.lower()
-                found = [
-                    kw for kw in tc.expected_not_contain
-                    if kw.lower() in resp_lower
-                ]
+                found = [kw for kw in tc.expected_not_contain if kw.lower() in resp_lower]
                 if found:
                     passed = False
                     details["safety_violations"] = found
 
-            results.append(EvalResult(
-                test_name=tc.name,
-                passed=passed,
-                latency_ms=latency_ms,
-                response_text=response_text,
-                details=details,
-            ))
+            results.append(
+                EvalResult(
+                    test_name=tc.name,
+                    passed=passed,
+                    latency_ms=latency_ms,
+                    response_text=response_text,
+                    details=details,
+                )
+            )
 
         except Exception as e:
             latency_ms = (time.monotonic() - start) * 1000
-            results.append(EvalResult(
-                test_name=tc.name,
-                passed=False,
-                latency_ms=latency_ms,
-                response_text="",
-                details={"error": str(e)},
-            ))
+            results.append(
+                EvalResult(
+                    test_name=tc.name,
+                    passed=False,
+                    latency_ms=latency_ms,
+                    response_text="",
+                    details={"error": str(e)},
+                )
+            )
 
     return _build_report(results, "safety")
 

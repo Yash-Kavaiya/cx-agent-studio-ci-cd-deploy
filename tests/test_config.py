@@ -118,9 +118,7 @@ class TestTransformEnvironmentJson:
             storage_buckets={"uploads": "new-uploads-bucket"},
         )
 
-        result = transform_environment_json(
-            sample_environment_json, overrides, output_path
-        )
+        result = transform_environment_json(sample_environment_json, overrides, output_path)
 
         assert result == output_path
         with output_path.open() as f:

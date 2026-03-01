@@ -199,9 +199,7 @@ def transform_agent_config(
 
     if env_json.exists():
         transform_environment_json(env_json, config.overrides)
-        console.print(
-            f"[bold green]Transformed config for[/] {config.deployment.environment}"
-        )
+        console.print(f"[bold green]Transformed config for[/] {config.deployment.environment}")
     else:
         console.print("[yellow]No environment.json found - creating from overrides[/]")
         data: dict[str, Any] = {}
