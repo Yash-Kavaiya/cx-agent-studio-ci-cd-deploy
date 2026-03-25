@@ -57,6 +57,7 @@ jobs:
             --app-id=${{ secrets.CES_APP_ID_STAGING }} \
             --test-suite=configs/evaluation/production_readiness.yaml \
             --min-score=0.85 \
+            --region=us \
             --output=evaluation-report.json
 
       - name: Upload evaluation report

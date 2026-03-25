@@ -9,7 +9,9 @@ set -euo pipefail
 # Configuration - Update these values for your environment
 # ============================================================
 PROJECT_ID="${GCP_PROJECT_ID:?Set GCP_PROJECT_ID environment variable}"
-REGION="${GCP_REGION:-us-central1}"
+# CES uses multi-region locations ("us" or "eu"), not zone-based regions.
+# GCS bucket must also be created in a compatible region (us or eu).
+REGION="${GCP_REGION:-us}"
 GITHUB_REPO="${GITHUB_REPO:?Set GITHUB_REPO (e.g., owner/repo)}"
 
 SA_NAME="cx-agent-cicd"
@@ -60,8 +62,8 @@ fi
 # ============================================================
 echo "--- Granting IAM roles ---"
 ROLES=(
-    "roles/dialogflow.admin"
-    "roles/storage.admin"
+    "roles/ces.admin"          # CES-specific admin role (export, import, sessions)
+    "roles/storage.admin"      # GCS bucket access for backups
     "roles/serviceusage.serviceUsageAdmin"
 )
 

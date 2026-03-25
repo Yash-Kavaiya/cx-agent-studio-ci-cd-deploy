@@ -60,6 +60,7 @@ jobs:
             --app-id=${{ secrets.CES_APP_ID }} \
             --test-type=${{ matrix.test_type }} \
             --test-suite=${{ inputs.test_suite || 'default' }} \
+            --region=us \
             --output=results-${{ matrix.test_type }}.json
 
       - name: Upload evaluation results
