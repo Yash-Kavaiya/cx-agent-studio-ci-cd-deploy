@@ -111,14 +111,16 @@ jobs:
             --app-id=${{ secrets.CES_APP_ID_PRODUCTION }} \
             --output-dir=agents/backup \
             --backup-to-gcs \
-            --gcs-bucket=${{ secrets.GCS_BACKUP_BUCKET }}
+            --gcs-bucket=${{ secrets.GCS_BACKUP_BUCKET }} \
+            --region=us
 
       - name: Export agent from staging
         run: |
           python -m src.cli export-agent \
             --project-id=${{ secrets.GCP_PROJECT_ID_STAGING }} \
             --app-id=${{ secrets.CES_APP_ID_STAGING }} \
-            --output-dir=agents/exported
+            --output-dir=agents/exported \
+            --region=us
 
       - name: Transform agent config for production
         run: |
@@ -138,7 +140,8 @@ jobs:
           python -m src.cli import-agent \
             --project-id=${{ secrets.GCP_PROJECT_ID_PRODUCTION }} \
             --app-id=${{ secrets.CES_APP_ID_PRODUCTION }} \
-            --agent-dir=agents/exported
+            --agent-dir=agents/exported \
+            --region=us
 
       - name: Run production smoke tests
         id: smoke-test
@@ -146,7 +149,7 @@ jobs:
           python -m src.cli smoke-test \
             --project-id=${{ secrets.GCP_PROJECT_ID_PRODUCTION }} \
             --app-id=${{ secrets.CES_APP_ID_PRODUCTION }} \
-            --env-config=configs/environments/production.yaml
+            --region=us
 
       - name: Rollback on failure
         if: failure() && steps.deploy.outcome == 'success'
@@ -155,7 +158,8 @@ jobs:
           python -m src.cli import-agent \
             --project-id=${{ secrets.GCP_PROJECT_ID_PRODUCTION }} \
             --app-id=${{ secrets.CES_APP_ID_PRODUCTION }} \
-            --agent-dir=agents/backup
+            --agent-dir=agents/backup \
+            --region=us
           echo "::error::Rollback completed. Please investigate the failure."
 
       - name: Archive deployment artifacts

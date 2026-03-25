@@ -106,29 +106,44 @@ def run_session(
     project_id: str,
     app_id: str,
     user_input: str,
-    region: str = "us-central1",
+    region: str = "us",
     session_id: str | None = None,
 ) -> dict[str, Any]:
-    """Run a single session turn via the CES SessionService."""
-    # API: POST /v1beta/projects/{project}/locations/{region}/apps/{app}/sessions/{session}:runSession
-    # Using "-" as a wildcard session ID to create an anonymous session
-    url = (
-        f"{CES_API_ENDPOINT}/{API_VERSION}/"
-        f"projects/{project_id}/locations/{region}/"
-        f"apps/{app_id}/sessions/-:runSession"
+    """Run a single session turn via the CES v1beta SessionService.
+
+    API: POST /v1beta/{config.session=projects/*/locations/*/apps/*/sessions/*}:runSession
+
+    The session resource name is used in both the URL path (gRPC transcoding)
+    AND the request body config.session field — they must match.
+
+    Request body:
+      {
+        "config": { "session": "<full session resource name>" },
+        "inputs": [{ "text": "<user input>" }]   ← note: "inputs" (array), not "input"
+      }
+
+    Response body: { "outputs": [{ "text": "...", "turnCompleted": true, ... }] }
+    """
+    import uuid
+
+    # Generate a stable session ID if not provided
+    sid = session_id or uuid.uuid4().hex
+    session_resource = (
+        f"projects/{project_id}/locations/{region}/apps/{app_id}/sessions/{sid}"
     )
 
-    # v1beta runSession payload structure
+    # URL uses the session resource name for gRPC-transcoding path binding
+    url = f"{CES_API_ENDPOINT}/{API_VERSION}/{session_resource}:runSession"
+
     payload: dict[str, Any] = {
         "config": {
-            "session": (
-                f"projects/{project_id}/locations/{region}/apps/{app_id}/sessions/"
-                f"{session_id or '-'}"
-            ),
+            # Required: full resource name of the session
+            "session": session_resource,
         },
-        "input": {
-            "text": user_input,
-        },
+        # "inputs" is an array of SessionInput objects (not "input")
+        "inputs": [
+            {"text": user_input},
+        ],
     }
 
     headers = get_auth_headers()
@@ -144,7 +159,7 @@ def evaluate_accuracy(
     project_id: str,
     app_id: str,
     test_cases: list[TestCase],
-    region: str = "us-central1",
+    region: str = "us",
 ) -> EvalReport:
     """Run accuracy evaluation: checks if agent responses match expectations."""
     results: list[EvalResult] = []
@@ -202,7 +217,7 @@ def evaluate_latency(
     project_id: str,
     app_id: str,
     test_cases: list[TestCase],
-    region: str = "us-central1",
+    region: str = "us",
 ) -> EvalReport:
     """Run latency evaluation: checks if agent responses are within time limits."""
     results: list[EvalResult] = []
@@ -244,7 +259,7 @@ def evaluate_safety(
     project_id: str,
     app_id: str,
     test_cases: list[TestCase],
-    region: str = "us-central1",
+    region: str = "us",
 ) -> EvalReport:
     """Run safety evaluation: ensures agent does not produce harmful content."""
     results: list[EvalResult] = []
@@ -294,7 +309,7 @@ def evaluate_safety(
 def run_smoke_test(
     project_id: str,
     app_id: str,
-    region: str = "us-central1",
+    region: str = "us",
 ) -> bool:
     """Run a basic smoke test to verify the agent is responding."""
     test_inputs = [
@@ -341,21 +356,26 @@ def generate_report_markdown(reports: list[EvalReport]) -> str:
 
 
 def _extract_response_text(response: dict[str, Any]) -> str:
-    """Extract the text response from a CES session response."""
-    if "output" in response:
-        output = response["output"]
-        if isinstance(output, dict) and "text" in output:
-            return cast(str, output["text"])
-        if isinstance(output, str):
-            return output
+    """Extract the agent's text response from a v1beta runSession response.
 
-    if "messages" in response:
-        messages = response["messages"]
-        if messages and isinstance(messages, list):
-            last_msg = messages[-1]
-            if isinstance(last_msg, dict):
-                return cast(str, last_msg.get("text", ""))
+    Response schema:
+      { "outputs": [ { "text": "...", "turnCompleted": true, ... }, ... ] }
 
+    outputs[] is a list of SessionOutput objects. Each can have one of:
+      text, audio, toolCalls, citations, googleSearchSuggestions, endSession, payload
+    We collect all text outputs and join them.
+    """
+    outputs = response.get("outputs", [])
+    if outputs and isinstance(outputs, list):
+        texts = [
+            out["text"]
+            for out in outputs
+            if isinstance(out, dict) and "text" in out
+        ]
+        if texts:
+            return " ".join(texts)
+
+    # Fallback: return raw JSON so smoke tests don't fail silently
     return json.dumps(response)
 
 

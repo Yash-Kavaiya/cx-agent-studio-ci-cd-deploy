@@ -61,7 +61,7 @@ jobs:
           python -m src.cli export-agent \
             --project-id=${{ secrets.GCP_PROJECT_ID_DEV }} \
             --app-id=${{ inputs.agent_app_id || secrets.CES_APP_ID }} \
-            --output-dir=agents/exported
+            --output-dir=agents/exported --region=us
 
       - name: Transform agent config for staging
         run: |
@@ -79,14 +79,15 @@ jobs:
           python -m src.cli import-agent \
             --project-id=${{ secrets.GCP_PROJECT_ID_STAGING }} \
             --app-id=${{ inputs.agent_app_id || secrets.CES_APP_ID_STAGING }} \
-            --agent-dir=agents/exported
+            --agent-dir=agents/exported \
+            --region=us
 
       - name: Run smoke tests
         run: |
           python -m src.cli smoke-test \
             --project-id=${{ secrets.GCP_PROJECT_ID_STAGING }} \
             --app-id=${{ secrets.CES_APP_ID_STAGING }} \
-            --env-config=configs/environments/staging.yaml
+            --region=us
 
       - name: Archive deployment artifacts
         if: always()
