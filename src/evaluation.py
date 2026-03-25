@@ -21,7 +21,7 @@ from src.auth import CES_API_ENDPOINT, get_auth_headers
 
 console = Console()
 
-API_VERSION = "v1"
+API_VERSION = "v1beta"
 
 
 @dataclass
@@ -110,17 +110,26 @@ def run_session(
     session_id: str | None = None,
 ) -> dict[str, Any]:
     """Run a single session turn via the CES SessionService."""
+    # API: POST /v1beta/projects/{project}/locations/{region}/apps/{app}/sessions/{session}:runSession
+    # Using "-" as a wildcard session ID to create an anonymous session
     url = (
         f"{CES_API_ENDPOINT}/{API_VERSION}/"
         f"projects/{project_id}/locations/{region}/"
-        f"agentApps/{app_id}/sessions/-:run"
+        f"apps/{app_id}/sessions/-:runSession"
     )
 
+    # v1beta runSession payload structure
     payload: dict[str, Any] = {
-        "input": {"text": user_input},
+        "config": {
+            "session": (
+                f"projects/{project_id}/locations/{region}/apps/{app_id}/sessions/"
+                f"{session_id or '-'}"
+            ),
+        },
+        "input": {
+            "text": user_input,
+        },
     }
-    if session_id:
-        payload["sessionId"] = session_id
 
     headers = get_auth_headers()
     headers["Content-Type"] = "application/json"

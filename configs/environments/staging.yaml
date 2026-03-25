@@ -1,16 +1,17 @@
 gcp:
-  project_id: "your-staging-project-id"
-  region: "us-central1"
+  project_id: "gen-ai-guru-gdg-pune"
+  region: "us"
   multi_region: "us"
 
 ces:
-  app_id: "your-staging-app-id"
+  # Replace with your staging app ID when you have a separate staging app
+  app_id: "e9c8da8d-c9fc-4ec4-aab0-4632406e8868"
   agent_id: ""
   api_endpoint: "ces.googleapis.com"
   oauth_scope: "https://www.googleapis.com/auth/ces"
 
 storage:
-  bucket_name: "your-staging-project-id-agent-exports"
+  bucket_name: "gen-ai-guru-gdg-pune-agent-exports"
   export_prefix: "agent-exports/staging"
   backup_prefix: "agent-backups/staging"
 

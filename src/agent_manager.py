@@ -1,7 +1,7 @@
 """Agent management operations for CX Agent Studio.
 
 Handles export, import, validation, and deployment of CES agent applications
-via the ces.googleapis.com API. Supports both direct API calls and
+via the ces.googleapis.com API (v1beta). Supports both direct API calls and
 the export/import workflow recommended for CI/CD pipelines.
 """
 
@@ -21,12 +21,26 @@ from src.config import PipelineConfig, transform_environment_json
 
 console = Console()
 
-API_VERSION = "v1"
+# CES API is currently on v1beta
+API_VERSION = "v1beta"
+
+# Default to multi-region "us" (CES console uses us/eu, not us-central1)
+DEFAULT_REGION = "us"
 
 
-def _build_url(project_id: str, path: str) -> str:
-    """Build a CES API URL."""
-    return f"{CES_API_ENDPOINT}/{API_VERSION}/projects/{project_id}/{path}"
+def _build_app_url(project_id: str, region: str, app_id: str, suffix: str = "") -> str:
+    """Build a CES API URL for an app resource."""
+    base = (
+        f"{CES_API_ENDPOINT}/{API_VERSION}"
+        f"/projects/{project_id}/locations/{region}/apps/{app_id}"
+    )
+    return f"{base}{suffix}" if suffix else base
+
+
+def _build_parent_url(project_id: str, region: str, suffix: str = "") -> str:
+    """Build a CES API URL for a parent (location) resource."""
+    base = f"{CES_API_ENDPOINT}/{API_VERSION}/projects/{project_id}/locations/{region}"
+    return f"{base}{suffix}" if suffix else base
 
 
 def _api_request(
@@ -51,24 +65,66 @@ def _api_request(
         return response
 
 
+def get_agent(
+    project_id: str,
+    app_id: str,
+    region: str = DEFAULT_REGION,
+) -> dict[str, Any]:
+    """Get details of a CX Agent Studio app.
+
+    Returns the full app resource including name, display name,
+    description, state, and configuration.
+    """
+    url = _build_app_url(project_id, region, app_id)
+
+    console.print(
+        f"[bold blue]Fetching agent[/] {app_id} from project {project_id} ({region})..."
+    )
+
+    response = _api_request("GET", url)
+    result: dict[str, Any] = response.json()
+
+    console.print(f"[bold green]Agent found:[/] {result.get('displayName', app_id)}")
+    console.print(f"  State: {result.get('state', 'UNKNOWN')}")
+    console.print(f"  Name: {result.get('name', '')}")
+
+    return result
+
+
+def list_apps(
+    project_id: str,
+    region: str = DEFAULT_REGION,
+) -> list[dict[str, Any]]:
+    """List all CX Agent Studio apps in a project/location."""
+    url = _build_parent_url(project_id, region, "/apps")
+
+    console.print(f"[bold blue]Listing apps[/] in project {project_id} ({region})...")
+
+    response = _api_request("GET", url)
+    result: dict[str, Any] = response.json()
+    apps = cast(list[dict[str, Any]], result.get("apps", []))
+
+    console.print(f"[bold green]Found {len(apps)} app(s)[/]")
+    return apps
+
+
 def export_agent(
     project_id: str,
     app_id: str,
     output_dir: str | Path,
-    region: str = "us-central1",
+    region: str = DEFAULT_REGION,
 ) -> Path:
     """Export an agent application from CX Agent Studio.
 
     Downloads the agent configuration as a zip archive containing
     all agent resources including the environment.json file.
+
+    API: POST /v1beta/projects/{project}/locations/{region}/apps/{app}:exportApp
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    url = _build_url(
-        project_id,
-        f"locations/{region}/agentApps/{app_id}:export",
-    )
+    url = _build_app_url(project_id, region, app_id, ":exportApp")
 
     console.print(f"[bold blue]Exporting agent[/] {app_id} from project {project_id}...")
 
@@ -76,9 +132,9 @@ def export_agent(
     result = response.json()
 
     if "agentContent" in result:
-        zip_path = output_dir / f"{app_id}.zip"
         import base64
 
+        zip_path = output_dir / f"{app_id}.zip"
         content = base64.b64decode(result["agentContent"])
         zip_path.write_bytes(content)
 
@@ -87,9 +143,12 @@ def export_agent(
 
         zip_path.unlink()
         console.print(f"[bold green]Agent exported to[/] {output_dir}")
+
     elif "agentUri" in result:
         console.print(f"[bold green]Agent exported to GCS:[/] {result['agentUri']}")
+
     else:
+        # Long-running operation — save manifest for inspection
         export_manifest = output_dir / "export_manifest.json"
         with export_manifest.open("w") as f:
             json.dump(result, f, indent=2)
@@ -102,12 +161,15 @@ def import_agent(
     project_id: str,
     app_id: str,
     agent_dir: str | Path,
-    region: str = "us-central1",
+    region: str = DEFAULT_REGION,
 ) -> dict[str, Any]:
     """Import an agent application to CX Agent Studio.
 
     Packages the agent directory into a zip and uploads it
     to the target project/app via the CES API.
+
+    API: POST /v1beta/projects/{project}/locations/{region}/apps:importApp
+    Note: importApp is posted to the parent (location), not the app resource.
     """
     agent_dir = Path(agent_dir)
 
@@ -131,12 +193,17 @@ def import_agent(
 
         agent_content = base64.b64encode(tmp_path.read_bytes()).decode()
 
-        url = _build_url(
-            project_id,
-            f"locations/{region}/agentApps/{app_id}:import",
-        )
+        # importApp is a POST to the parent location, with the target app_id in the body
+        url = _build_parent_url(project_id, region, "/apps:importApp")
 
-        response = _api_request("POST", url, json_body={"agentContent": agent_content})
+        response = _api_request(
+            "POST",
+            url,
+            json_body={
+                "agentContent": agent_content,
+                "appId": app_id,
+            },
+        )
         result: dict[str, Any] = response.json()
 
         console.print(f"[bold green]Agent imported successfully[/] to {app_id}")
@@ -260,30 +327,60 @@ def backup_to_gcs(
 def list_agent_versions(
     project_id: str,
     app_id: str,
-    region: str = "us-central1",
+    region: str = DEFAULT_REGION,
 ) -> list[dict[str, Any]]:
-    """List available versions of an agent application."""
-    url = _build_url(
-        project_id,
-        f"locations/{region}/agentApps/{app_id}/versions",
-    )
+    """List available versions of an agent application.
+
+    API: GET /v1beta/projects/{project}/locations/{region}/apps/{app}/versions
+    """
+    url = _build_app_url(project_id, region, app_id, "/versions")
+
+    console.print(f"[bold blue]Listing versions[/] for app {app_id}...")
+
     response = _api_request("GET", url)
     result: dict[str, Any] = response.json()
-    return cast(list[dict[str, Any]], result.get("versions", []))
+    versions = cast(list[dict[str, Any]], result.get("appVersions", []))
+
+    console.print(f"[bold green]Found {len(versions)} version(s)[/]")
+    return versions
 
 
 def restore_agent_version(
     project_id: str,
     app_id: str,
     version_id: str,
-    region: str = "us-central1",
+    region: str = DEFAULT_REGION,
 ) -> dict[str, Any]:
-    """Restore a specific version of an agent application."""
-    url = _build_url(
-        project_id,
-        f"locations/{region}/agentApps/{app_id}:restoreVersion",
-    )
-    response = _api_request("POST", url, json_body={"versionId": version_id})
+    """Restore a specific version of an agent application.
+
+    API: POST /v1beta/projects/{project}/locations/{region}/apps/{app}/versions/{version}:restore
+    """
+    url = _build_app_url(project_id, region, app_id, f"/versions/{version_id}:restore")
+
+    response = _api_request("POST", url, json_body={})
     result: dict[str, Any] = response.json()
     console.print(f"[bold green]Restored version[/] {version_id}")
+    return result
+
+
+def create_agent_version(
+    project_id: str,
+    app_id: str,
+    display_name: str,
+    description: str = "",
+    region: str = DEFAULT_REGION,
+) -> dict[str, Any]:
+    """Create (snapshot) a new version of an agent application.
+
+    API: POST /v1beta/projects/{project}/locations/{region}/apps/{app}/versions
+    """
+    url = _build_app_url(project_id, region, app_id, "/versions")
+
+    body: dict[str, Any] = {"displayName": display_name}
+    if description:
+        body["description"] = description
+
+    response = _api_request("POST", url, json_body=body)
+    result: dict[str, Any] = response.json()
+    console.print(f"[bold green]Created version:[/] {display_name}")
     return result

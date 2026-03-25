@@ -26,11 +26,82 @@ def main() -> None:
     """
 
 
+@main.command("get-agent")
+@click.option("--project-id", required=True, help="GCP Project ID")
+@click.option("--app-id", required=True, help="CES Agent Application ID")
+@click.option("--region", default="us", help="GCP region/multi-region (default: us)")
+@click.option("--json-output", is_flag=True, help="Print raw JSON response")
+def get_agent_cmd(project_id: str, app_id: str, region: str, json_output: bool) -> None:
+    """Read/get details of a CX Agent Studio app."""
+    from src.agent_manager import get_agent
+
+    result = get_agent(project_id, app_id, region)
+    if json_output:
+        console.print_json(json.dumps(result, indent=2))
+
+
+@main.command("list-apps")
+@click.option("--project-id", required=True, help="GCP Project ID")
+@click.option("--region", default="us", help="GCP region/multi-region (default: us)")
+@click.option("--json-output", is_flag=True, help="Print raw JSON response")
+def list_apps_cmd(project_id: str, region: str, json_output: bool) -> None:
+    """List all CX Agent Studio apps in a project."""
+    from src.agent_manager import list_apps
+
+    apps = list_apps(project_id, region)
+    if json_output:
+        console.print_json(json.dumps(apps, indent=2))
+    else:
+        for app in apps:
+            console.print(
+                f"  [cyan]{app.get('name', '')}[/]  "
+                f"state={app.get('state', '?')}  "
+                f"display={app.get('displayName', '')}"
+            )
+
+
+@main.command("list-versions")
+@click.option("--project-id", required=True, help="GCP Project ID")
+@click.option("--app-id", required=True, help="CES Agent Application ID")
+@click.option("--region", default="us", help="GCP region/multi-region (default: us)")
+@click.option("--json-output", is_flag=True, help="Print raw JSON response")
+def list_versions_cmd(project_id: str, app_id: str, region: str, json_output: bool) -> None:
+    """List versions (snapshots) of a CX Agent Studio app."""
+    from src.agent_manager import list_agent_versions
+
+    versions = list_agent_versions(project_id, app_id, region)
+    if json_output:
+        console.print_json(json.dumps(versions, indent=2))
+    else:
+        for v in versions:
+            console.print(
+                f"  [cyan]{v.get('name', '')}[/]  "
+                f"displayName={v.get('displayName', '')}  "
+                f"createTime={v.get('createTime', '')}"
+            )
+
+
+@main.command("create-version")
+@click.option("--project-id", required=True, help="GCP Project ID")
+@click.option("--app-id", required=True, help="CES Agent Application ID")
+@click.option("--display-name", required=True, help="Version display name")
+@click.option("--description", default="", help="Optional version description")
+@click.option("--region", default="us", help="GCP region/multi-region (default: us)")
+def create_version_cmd(
+    project_id: str, app_id: str, display_name: str, description: str, region: str
+) -> None:
+    """Create a new version (immutable snapshot) of a CX Agent Studio app."""
+    from src.agent_manager import create_agent_version
+
+    result = create_agent_version(project_id, app_id, display_name, description, region)
+    console.print_json(json.dumps(result, indent=2))
+
+
 @main.command()
 @click.option("--project-id", required=True, help="GCP Project ID")
 @click.option("--app-id", required=True, help="CES Agent Application ID")
 @click.option("--output-dir", required=True, help="Directory to export agent to")
-@click.option("--region", default="us-central1", help="GCP region")
+@click.option("--region", default="us", help="GCP region/multi-region (default: us)")
 @click.option("--backup-to-gcs", is_flag=True, help="Also backup to GCS")
 @click.option("--gcs-bucket", default=None, help="GCS bucket for backup")
 def export_agent(
@@ -55,7 +126,7 @@ def export_agent(
 @click.option("--project-id", required=True, help="GCP Project ID")
 @click.option("--app-id", required=True, help="CES Agent Application ID")
 @click.option("--agent-dir", required=True, help="Directory containing agent files")
-@click.option("--region", default="us-central1", help="GCP region")
+@click.option("--region", default="us", help="GCP region/multi-region (default: us)")
 def import_agent(
     project_id: str,
     app_id: str,
@@ -143,7 +214,7 @@ def validate_agent_template() -> None:
 @click.option("--project-id", required=True, help="GCP Project ID")
 @click.option("--app-id", required=True, help="CES Agent Application ID")
 @click.option("--env-config", default=None, help="Environment config path")
-@click.option("--region", default="us-central1", help="GCP region")
+@click.option("--region", default="us", help="GCP region/multi-region (default: us)")
 def smoke_test(
     project_id: str,
     app_id: str,
@@ -165,7 +236,7 @@ def smoke_test(
 @click.option("--test-suite", default="default", help="Test suite name or path")
 @click.option("--min-score", default=0.0, type=float, help="Minimum passing score (0.0-1.0)")
 @click.option("--output", default=None, help="Output file path for results JSON")
-@click.option("--region", default="us-central1", help="GCP region")
+@click.option("--region", default="us", help="GCP region/multi-region (default: us)")
 def evaluate_agent(
     project_id: str,
     app_id: str,
