@@ -1,0 +1,6 @@
+interface:
+  display_name: "Cx Agent Studio Ci Cd Deploy"
+  short_description: "Repo-specific patterns and workflows for cx-agent-studio-ci-cd-deploy"
+  default_prompt: "Use the cx-agent-studio-ci-cd-deploy repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
