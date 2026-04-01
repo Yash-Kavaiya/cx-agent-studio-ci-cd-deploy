@@ -182,6 +182,7 @@ def export_agent(
     output_dir: str | Path,
     region: str = DEFAULT_REGION,
     gcs_uri: str | None = None,
+    data_format: str = "JSON",
     app_version: str | None = None,
 ) -> Path:
     """Export an agent application from CX Agent Studio.
@@ -189,11 +190,18 @@ def export_agent(
     exportApp is a Long-Running Operation. This function:
     1. POSTs the export request (returns an Operation)
     2. Polls the operation until done
-    3. Downloads/extracts the agent zip to output_dir
+    3. Downloads/extracts the agent zip to output_dir (inline) or records GCS URI
 
     API: POST /v1beta/projects/{project}/locations/{region}/apps/{app}:exportApp
-    Request body: { exportFormat: "JSON", gcsUri?: ..., appVersion?: ... }
-    Response: Operation (poll to get result)
+    Request body:
+      {
+        "dataFormat": "JSON" | "BLOB",
+        "appVersion": "<version resource name>",       # optional
+        // One of the following destination fields:
+        "gcsUri": "gs://bucket/path",                  # export to GCS
+        // OR omit gcsUri to get inline appContent in the response
+      }
+    Response: Operation → poll → ExportAppResponse { appContent | gcsUri }
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -201,8 +209,7 @@ def export_agent(
     url = _app_url(project_id, region, app_id, ":exportApp")
 
     body: dict[str, Any] = {
-        # exportFormat is required — use JSON for portability
-        "exportFormat": "JSON",
+        "dataFormat": data_format,
     }
     if gcs_uri:
         body["gcsUri"] = gcs_uri
@@ -235,8 +242,11 @@ def export_agent(
         zip_path.unlink()
         console.print(f"[bold green]App exported to[/] {output_dir}")
 
-    elif "appUri" in op_response or "gcsUri" in op_response:
-        uri = op_response.get("appUri") or op_response.get("gcsUri")
+    elif "gcsUri" in op_response:
+        uri = op_response["gcsUri"]
+        # Save GCS URI reference for downstream pipeline steps
+        manifest = output_dir / "export_manifest.json"
+        manifest.write_text(json.dumps({"gcsUri": uri, "appId": app_id}, indent=2))
         console.print(f"[bold green]App exported to GCS:[/] {uri}")
 
     else:

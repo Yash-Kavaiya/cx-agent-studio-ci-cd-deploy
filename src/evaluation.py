@@ -356,15 +356,17 @@ def generate_report_markdown(reports: list[EvalReport]) -> str:
 
 
 def _extract_response_text(response: dict[str, Any]) -> str:
-    """Extract the agent's text response from a v1beta runSession response.
+    """Extract the agent's text response from a CES API response.
 
-    Response schema:
-      { "outputs": [ { "text": "...", "turnCompleted": true, ... }, ... ] }
+    Supports multiple response schemas:
+      1. v1beta runSession: { "outputs": [ { "text": "...", ... }, ... ] }
+      2. Singular output dict: { "output": { "text": "..." } }
+      3. Singular output string: { "output": "..." }
+      4. Messages array: { "messages": [ { "text": "..." }, ... ] }
 
-    outputs[] is a list of SessionOutput objects. Each can have one of:
-      text, audio, toolCalls, citations, googleSearchSuggestions, endSession, payload
-    We collect all text outputs and join them.
+    Falls back to raw JSON if no known format is matched.
     """
+    # Format 1: v1beta outputs array
     outputs = response.get("outputs", [])
     if outputs and isinstance(outputs, list):
         texts = [
@@ -374,6 +376,21 @@ def _extract_response_text(response: dict[str, Any]) -> str:
         ]
         if texts:
             return " ".join(texts)
+
+    # Format 2 & 3: singular "output" field (dict with text or plain string)
+    output = response.get("output")
+    if output is not None:
+        if isinstance(output, dict) and "text" in output:
+            return output["text"]
+        if isinstance(output, str):
+            return output
+
+    # Format 4: messages array (take last message)
+    messages = response.get("messages", [])
+    if messages and isinstance(messages, list):
+        for msg in reversed(messages):
+            if isinstance(msg, dict) and "text" in msg:
+                return msg["text"]
 
     # Fallback: return raw JSON so smoke tests don't fail silently
     return json.dumps(response)
