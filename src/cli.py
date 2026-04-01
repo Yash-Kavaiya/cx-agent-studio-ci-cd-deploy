@@ -102,6 +102,9 @@ def create_version_cmd(
 @click.option("--app-id", required=True, help="CES Agent Application ID")
 @click.option("--output-dir", required=True, help="Directory to export agent to")
 @click.option("--region", default="us", help="GCP region/multi-region (default: us)")
+@click.option("--gcs-uri", default=None, help="GCS URI to export agent directly to (e.g. gs://bucket/path)")
+@click.option("--data-format", default="JSON", type=click.Choice(["JSON", "BLOB"]),
+              help="Export format (default: JSON)")
 @click.option("--backup-to-gcs", is_flag=True, help="Also backup to GCS")
 @click.option("--gcs-bucket", default=None, help="GCS bucket for backup")
 def export_agent(
@@ -109,6 +112,8 @@ def export_agent(
     app_id: str,
     output_dir: str,
     region: str,
+    gcs_uri: str | None,
+    data_format: str,
     backup_to_gcs: bool,
     gcs_bucket: str | None,
 ) -> None:
@@ -116,7 +121,10 @@ def export_agent(
     from src.agent_manager import backup_to_gcs as do_backup
     from src.agent_manager import export_agent as do_export
 
-    result_dir = do_export(project_id, app_id, output_dir, region)
+    result_dir = do_export(
+        project_id, app_id, output_dir, region,
+        gcs_uri=gcs_uri, data_format=data_format,
+    )
 
     if backup_to_gcs and gcs_bucket:
         do_backup(result_dir, gcs_bucket, "agent-backups", project_id)
