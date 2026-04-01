@@ -1,0 +1,421 @@
+# Instincts generated from https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+# Generated: 2026-04-01T13:55:50.313Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: cx-agent-studio-ci-cd-deploy-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Commit Length
+
+## Action
+
+Write moderate-length commit messages (~58 characters)
+
+## Evidence
+
+- Average commit message length: 58 chars
+- Based on 9 commits
+
+---
+id: cx-agent-studio-ci-cd-deploy-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Naming Files
+
+## Action
+
+Use snake_case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: snake_case
+
+---
+id: cx-agent-studio-ci-cd-deploy-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: cx-agent-studio-ci-cd-deploy-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: cx-agent-studio-ci-cd-deploy-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: cx-agent-studio-ci-cd-deploy-test-naming
+trigger: "when creating a test file"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Test Naming
+
+## Action
+
+Name test files using the pattern: *.test.ts
+
+## Evidence
+
+- File pattern: *.test.ts
+- Consistent across test files
+
+---
+id: cx-agent-studio-ci-cd-deploy-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~20x per month
+- Files: **/*.test.*
+
+---
+id: cx-agent-studio-ci-cd-deploy-workflow-align-api-contract-and-endpoints
+trigger: "when doing align api contract and endpoints"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Workflow Align Api Contract And Endpoints
+
+## Action
+
+Follow the align-api-contract-and-endpoints workflow:
+1. Update src/agent_manager.py with new/changed API fields, endpoints, and LRO handling.
+2. Update src/evaluation.py to match new payload/request/response schemas.
+3. Update src/cli.py if CLI commands or options change.
+4. Update environment configs (configs/environments/*.yaml) if project IDs, app IDs, or regions change.
+5. Update workflow YAMLs (.github/workflows/*.yml) to reflect new CLI flags or region defaults.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/agent_manager.py, src/evaluation.py, src/cli.py
+
+---
+id: cx-agent-studio-ci-cd-deploy-workflow-ci-cd-workflow-update
+trigger: "when doing ci cd workflow update"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Workflow Ci Cd Workflow Update
+
+## Action
+
+Follow the ci-cd-workflow-update workflow:
+1. Edit .github/workflows/*.yml to update steps, flags, or triggers.
+2. Edit scripts (scripts/*.sh) if deployment/evaluation scripts need changes.
+3. Optionally update src/cli.py or related Python files to support new CLI flags or behaviors.
+4. Test and validate workflow changes via pushes or PRs.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: .github/workflows/agent-evaluation.yml, .github/workflows/cd-production.yml, .github/workflows/cd-staging.yml
+
+---
+id: cx-agent-studio-ci-cd-deploy-workflow-add-or-fix-export-import-agent-features
+trigger: "when doing add or fix export import agent features"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Workflow Add Or Fix Export Import Agent Features
+
+## Action
+
+Follow the add-or-fix-export-import-agent-features workflow:
+1. Update src/agent_manager.py to implement/fix export/import logic and API contract.
+2. Update src/cli.py to expose new CLI options or commands.
+3. Update or add tests in tests/test_agent_manager.py.
+4. Update workflows (.github/workflows/cd-production.yml) if deployment/export logic changes.
+5. Optionally update src/evaluation.py for related evaluation logic.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/agent_manager.py, src/cli.py, src/evaluation.py
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-naming-conventions
+trigger: "When creating or renaming files, functions, classes, or constants in Python source code."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Naming Conventions
+
+## Action
+
+Use snake_case for files, camelCase for functions, PascalCase for classes, and SCREAMING_SNAKE_CASE for constants.
+
+## Evidence
+
+- Pattern in namingConventions: files (snake_case), functions (camelCase), classes (PascalCase), constants (SCREAMING_SNAKE_CASE)
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-import-style
+trigger: "When importing modules within the codebase."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Import Style
+
+## Action
+
+Use relative imports for internal modules.
+
+## Evidence
+
+- Pattern in codeStyle: importStyle is relative
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-export-style
+trigger: "When exporting symbols from a module."
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Export Style
+
+## Action
+
+Use named exports (explicitly define __all__ in Python modules if needed).
+
+## Evidence
+
+- Pattern in codeStyle: exportStyle is named
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-test-file-pattern
+trigger: "When adding or updating test files."
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Test File Pattern
+
+## Action
+
+Name test files using the pattern *.test.ts.
+
+## Evidence
+
+- Pattern in testing: filePattern is *.test.ts
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-test-type-unit
+trigger: "When writing tests."
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Test Type Unit
+
+## Action
+
+Focus on unit tests as the primary test type.
+
+## Evidence
+
+- Pattern in testing: testTypes includes unit
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-commit-prefix
+trigger: "When writing a commit message."
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Commit Prefix
+
+## Action
+
+Prefix commit messages with a type such as fix: or ci: to indicate the purpose.
+
+## Evidence
+
+- Seen in commit: fix: end-to-end correctness pass - all remaining gaps
+- Seen in commit: ci: fix github actions format and secret checks
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-commit-length
+trigger: "When composing a commit message."
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Commit Length
+
+## Action
+
+Write descriptive commit messages averaging around 58 characters.
+
+## Evidence
+
+- Pattern in commits: averageLength is 58
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-align-api-contract
+trigger: "When the CES API contract changes or needs to be precisely matched."
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Align Api Contract
+
+## Action
+
+Update src/agent_manager.py, src/evaluation.py, src/cli.py, environment configs, and workflow YAMLs to match the new API contract.
+
+## Evidence
+
+- Workflow: align-api-contract-and-endpoints
+- Seen in commit: Update src/agent_manager.py with new/changed API fields, endpoints, and LRO handling.
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-ci-cd-workflow-update
+trigger: "When deployment or evaluation automation needs to be fixed or improved (e.g., region flag, rollback condition, new checks)."
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Ci Cd Workflow Update
+
+## Action
+
+Edit .github/workflows/*.yml, scripts, and optionally src/cli.py to update steps, flags, or triggers, then test and validate workflow changes.
+
+## Evidence
+
+- Workflow: ci-cd-workflow-update
+- Seen in commit: ci: fix github actions format and secret checks
+
+---
+id: cx-agent-studio-ci-cd-deploy-instinct-export-import-feature
+trigger: "When adding new export/import capabilities or fixing related bugs."
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: Yash-Kavaiya/cx-agent-studio-ci-cd-deploy
+---
+
+# Cx Agent Studio Ci Cd Deploy Instinct Export Import Feature
+
+## Action
+
+Update src/agent_manager.py, src/cli.py, tests/test_agent_manager.py, and workflows to implement/fix export/import logic and ensure comprehensive tests.
+
+## Evidence
+
+- Workflow: add-or-fix-export-import-agent-features
+- Seen in commit: Fix agent export pipeline and resolve all test failures
+
